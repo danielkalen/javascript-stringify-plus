@@ -76,10 +76,6 @@ describe('javascript-stringify', function () {
         it('should stringify', test(date, 'new Date(' + date.getTime() + ')'));
       });
 
-      describe('RegExp', function () {
-        it('should stringify as shorthand', test(/[abc]/gi, '/[abc]/gi'));
-      });
-
       describe('Number', function () {
         it('should stringify', test(new Number(10), 'new Number(10)'));
       });
@@ -94,6 +90,49 @@ describe('javascript-stringify', function () {
 
       describe('Buffer', function () {
         it('should stringify', test(new Buffer('test'), "new Buffer('test')"));
+      });
+
+      describe('RegExp', function () {
+        it('should stringify as shorthand', test(/[abc]/gi, '/[abc]/gi'));
+
+        it('should retain custom properties defined on the object', function(){
+          var regObj = /abc/gi;
+          regObj.fn = function(){return this.toString().toUpperCase()};
+          regObj.prop = 'hello';
+
+          expect(regObj.fn()).to.equal('/ABC/GI');
+          
+          var afterStringify = eval('('+stringify(regObj)+')');
+          expect(typeof afterStringify).to.equal('object');
+          expect(afterStringify.constructor.name).to.equal('RegExp');
+          expect(Object.keys(afterStringify).length).to.equal(Object.keys(regObj).length);
+          expect(afterStringify.prop).to.equal('hello');
+          expect(afterStringify.fn()).to.equal('/ABC/GI');
+        });
+      });
+
+      describe('Function', function(){
+        it('should stringify', function(){
+          var fn = function(a,b,c){return (a+b)*c;};
+          var stringified = eval('('+stringify(fn)+')');
+
+          expect(typeof stringified).to.equal('function');
+          expect(stringified(2,5,10)).to.equal(fn(2,5,10));
+        });
+
+        it('should retain custom properties defined on the function', function(){
+          var fn = function(a,b,c){return (a+b)*c;};
+          fn.innerFn = function(){return this(2,5,10)/20};
+          fn.prop = 'hello';
+
+          var stringified = eval('('+stringify(fn)+')');
+
+          expect(typeof stringified).to.equal('function');
+          expect(stringified(2,5,10)).to.equal(fn(2,5,10));          
+          expect(stringified.innerFn()).to.equal(fn.innerFn());          
+          expect(Object.keys(stringified).length).to.equal(Object.keys(fn).length);
+          expect(stringified.prop).to.equal('hello');
+        });
       });
     });
 

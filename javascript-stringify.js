@@ -174,6 +174,23 @@
     return '{' + values + '}';
   }
 
+
+  function stringifySpecialObject (object) {
+    var stringified = String(object),
+        customProps = Object.keys(object),
+        propsRestore, i;
+    
+    if (i=customProps.length) {
+      propsRestore = "var x="+stringified+";";
+      while (i--) {
+        propsRestore += "x['"+customProps[i]+"']="+stringify(object[customProps[i]])+";";
+      }
+      return "(function(){"+propsRestore+"return x;}())";
+    } else {
+      return stringified;
+    }
+  }
+
   /**
    * Convert JavaScript objects into strings.
    */
@@ -195,8 +212,8 @@
     '[object Uint8Array]': function (array, indent) {
       return 'new Uint8Array(' + stringifyArray(array) + ')';
     },
-    '[object RegExp]': String,
-    '[object Function]': String,
+    '[object RegExp]': stringifySpecialObject,
+    '[object Function]': stringifySpecialObject,
     '[object global]': toGlobalVariable,
     '[object Window]': toGlobalVariable
   };
